@@ -15,6 +15,7 @@ import com.google.common.io.ByteSource;
 @Test(groups = "live")
 public class BaseBlobMD5LiveTest extends BaseBlobStoreIntegrationTest{
 	
+	@Test
 	public void putBlobWithCorrectMD5() throws IOException, InterruptedException  {
 		String blobName = "putBlobWithCorrectMD5";
 		BlobStore blobStore = view.getBlobStore();
@@ -31,6 +32,7 @@ public class BaseBlobMD5LiveTest extends BaseBlobStoreIntegrationTest{
 	    blobStore.putBlob(containerName, blob);
 	}
 	
+	@Test
 	 public void putBlobWithIncorrectMD5() throws InterruptedException, IOException{
 		
 		String blobName = "putBlobWithIncorrectMD5";
@@ -52,6 +54,7 @@ public class BaseBlobMD5LiveTest extends BaseBlobStoreIntegrationTest{
 		
 	}
 	
+	@Test
 	public void putBlobWithoutMD5() throws InterruptedException, IOException{
 		
 		String blobName = "putBlobWithoutMD5";
@@ -70,10 +73,12 @@ public class BaseBlobMD5LiveTest extends BaseBlobStoreIntegrationTest{
 		
 	}
 	 
+	@Test
 	public void signedUrlPutWithCorrectMD5(){
 		
 	}
 	
+	@Test
 	public void signedUrlPutWithIncorrectMD5(){
 		
 	}
