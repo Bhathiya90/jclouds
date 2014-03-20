@@ -42,6 +42,7 @@ public class BaseBlobLiveTest extends BaseBlobStoreIntegrationTest {
 
    @Test
    @Parameters( { "jclouds.blobstore.httpstream.url", "jclouds.blobstore.httpstream.md5" })
+   
    public void testCopyUrl(@Optional String httpStreamUrl, @Optional String httpStreamMD5) throws Exception {
       httpStreamUrl = checkNotNull(httpStreamUrl != null ? httpStreamUrl : sysHttpStreamUrl, "httpStreamUrl");
 
@@ -67,5 +68,7 @@ public class BaseBlobLiveTest extends BaseBlobStoreIntegrationTest {
    protected void checkMD5(String container, String name, byte[] md5) {
       assertEquals(view.getBlobStore().blobMetadata(container, name).getContentMetadata().getContentMD5(), md5);
    }
+   
+   
 
 }
