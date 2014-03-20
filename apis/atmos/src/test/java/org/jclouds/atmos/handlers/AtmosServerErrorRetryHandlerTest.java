@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jclouds.atmos.binders;
+package org.jclouds.atmos.handlers;
 
 import static org.easymock.EasyMock.createMock;
 import static org.easymock.EasyMock.expect;
@@ -24,7 +24,6 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 import org.jclouds.atmos.domain.AtmosError;
-import org.jclouds.atmos.handlers.AtmosServerErrorRetryHandler;
 import org.jclouds.atmos.util.AtmosUtils;
 import org.jclouds.http.handlers.BackoffLimitedRetryHandler;
 import org.jclouds.http.HttpCommand;

@@ -16,24 +16,6 @@
  */
 package org.jclouds.openstack.nova.v2_0.options;
 
-import com.google.common.base.Objects;
-import com.google.common.base.Objects.ToStringHelper;
-import com.google.common.collect.ForwardingObject;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-import org.jclouds.http.HttpRequest;
-import org.jclouds.rest.MapBinder;
-import org.jclouds.rest.binders.BindToJsonPayload;
-
-import javax.inject.Inject;
-import javax.inject.Named;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
 import static com.google.common.base.Objects.equal;
 import static com.google.common.base.Objects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -42,9 +24,31 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Strings.emptyToNull;
 import static com.google.common.io.BaseEncoding.base64;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+
+import javax.inject.Inject;
+import javax.inject.Named;
+
+import org.jclouds.http.HttpRequest;
+import org.jclouds.openstack.nova.v2_0.domain.Network;
+import org.jclouds.rest.MapBinder;
+import org.jclouds.rest.binders.BindToJsonPayload;
+
+import com.google.common.base.Objects;
+import com.google.common.base.Objects.ToStringHelper;
+import com.google.common.collect.ForwardingObject;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+
 /**
  * @author Adrian Cole
  * @author Inbar Stolberg
+ * @author Zack Shoylev
  */
 public class CreateServerOptions implements MapBinder {
    @Inject
@@ -106,7 +110,9 @@ public class CreateServerOptions implements MapBinder {
    private byte[] userData;
    private String diskConfig;
    private Set<String> networks = ImmutableSet.of();
+   private Set<Network> novaNetworks = ImmutableSet.of();
    private String availabilityZone;
+   private boolean configDrive;
 
    @Override
    public boolean equals(Object object) {
@@ -119,7 +125,8 @@ public class CreateServerOptions implements MapBinder {
                && equal(metadata, other.metadata) && equal(personality, other.personality)
                && equal(adminPass, other.adminPass) && equal(diskConfig, other.diskConfig)
                && equal(adminPass, other.adminPass) && equal(networks, other.networks)
-               && equal(availabilityZone, other.availabilityZone);
+               && equal(availabilityZone, other.availabilityZone)
+               && equal(configDrive, other.configDrive);
       } else {
          return false;
       }
@@ -127,7 +134,7 @@ public class CreateServerOptions implements MapBinder {
 
    @Override
    public int hashCode() {
-      return Objects.hashCode(keyName, securityGroupNames, metadata, personality, adminPass, networks, availabilityZone);
+      return Objects.hashCode(keyName, securityGroupNames, metadata, personality, adminPass, networks, availabilityZone, configDrive);
    }
 
    protected ToStringHelper string() {
@@ -147,6 +154,7 @@ public class CreateServerOptions implements MapBinder {
       if (!networks.isEmpty())
          toString.add("networks", networks);
       toString.add("availability_zone", availabilityZone == null ? null : availabilityZone);
+      toString.add("configDrive", configDrive);
       return toString;
    }
 
@@ -171,6 +179,8 @@ public class CreateServerOptions implements MapBinder {
       @Named("OS-DCF:diskConfig")
       String diskConfig;
       Set<Map<String, String>> networks;
+      @Named("config_drive")
+      String configDrive;
 
       private ServerRequest(String name, String imageRef, String flavorRef) {
          this.name = name;
@@ -195,6 +205,8 @@ public class CreateServerOptions implements MapBinder {
          server.availabilityZone = availabilityZone;
       if (userData != null)
          server.user_data = base64().encode(userData);
+      if (configDrive)
+         server.configDrive = "true";
       if (securityGroupNames.size() > 0) {
          server.securityGroupNames = Sets.newLinkedHashSet();
          for (String groupName : securityGroupNames) {
@@ -209,8 +221,22 @@ public class CreateServerOptions implements MapBinder {
          server.diskConfig = diskConfig;
       }
 
-      if (!networks.isEmpty()) {
+      if (!networks.isEmpty() || !novaNetworks.isEmpty()) {
          server.networks = Sets.newLinkedHashSet(); // ensures ordering is preserved - helps testing and more intuitive for users.
+         for (Network network : novaNetworks) {
+            // Avoid serializing null values, which are common here.
+            ImmutableMap.Builder<String, String> networkMap = new ImmutableMap.Builder<String, String>();
+            if(network.getNetworkUuid() != null) {
+               networkMap.put("uuid", network.getNetworkUuid());
+            }
+            if(network.getPortUuid() != null) {
+               networkMap.put("port", network.getPortUuid());
+            }
+            if(network.getFixedIp() != null) {
+               networkMap.put("fixed_ip", network.getFixedIp());
+            }
+            server.networks.add(networkMap.build());
+         }
          for (String network : networks) {
             server.networks.add(ImmutableMap.of("uuid", network));
          }
@@ -290,9 +316,21 @@ public class CreateServerOptions implements MapBinder {
     * Custom user-data can be also be supplied at launch time.
     * It is retrievable by the instance and is often used for launch-time configuration
     * by instance scripts.
+    * Pass userData unencdoed, as the value will be base64 encoded automatically.
     */
    public CreateServerOptions userData(byte[] userData) {
       this.userData = userData;
+      return this;
+   }
+
+   /**
+    * Set to true to use a config drive for metadata.
+    * This is a separate configuration drive that can be used separately from the metadata service.
+    * This needs to be set to "true" when trying to use user data for cloud-init.
+    * @see http://docs.openstack.org/grizzly/openstack-compute/admin/content/config-drive.html
+    */
+   public CreateServerOptions configDrive(boolean configDrive) {
+      this.configDrive = configDrive;
       return this;
    }
 
@@ -345,6 +383,16 @@ public class CreateServerOptions implements MapBinder {
    public Set<String> getNetworks() {
       return networks;
    }
+   
+   /**
+    * Get custom networks specified for the server.
+    *
+    * @return A set of uuids defined by Neutron (previously Quantum)
+    * @see <a href="https://wiki.openstack.org/wiki/Neutron/APIv2-specification#Network">Neutron Networks<a/>
+    */
+   public Set<Network> getNovaNetworks() {
+      return novaNetworks;
+   }
 
    /**
     * @see #getSecurityGroupNames
@@ -387,20 +435,35 @@ public class CreateServerOptions implements MapBinder {
    }
 
    /**
-    * @see #getNetworks
+    * Determines if a configuration drive will be attached to the server or not.
+    * This can be used for cloud-init or other configuration purposes.  
     */
-   public CreateServerOptions networks(String... networks) {
-      return networks(ImmutableSet.copyOf(networks));
+   public boolean getConfigDrive() {
+      return configDrive;
    }
 
    /**
     * @see #getNetworks
     */
    public CreateServerOptions networks(Iterable<String> networks) {
-      for (String network : checkNotNull(networks, "networks"))
-         checkNotNull(emptyToNull(network), "all networks must be non-empty");
       this.networks = ImmutableSet.copyOf(networks);
       return this;
+   }
+
+   /**
+    * @see #getNetworks
+    * Overwrites networks supplied by {@link #networks(Iterable)}
+    */
+   public CreateServerOptions novaNetworks(Iterable<Network> networks) {
+      this.novaNetworks = ImmutableSet.copyOf(networks);
+      return this;
+   }
+
+   /**
+    * @see #getNetworks
+    */
+   public CreateServerOptions networks(String... networks) {
+      return networks(ImmutableSet.copyOf(networks));
    }
 
    public static class Builder {
@@ -472,6 +535,14 @@ public class CreateServerOptions implements MapBinder {
       public static CreateServerOptions networks(Iterable<String> networks) {
          CreateServerOptions options = new CreateServerOptions();
          return CreateServerOptions.class.cast(options.networks(networks));
+      }
+
+      /**
+       * @see CreateServerOptions#getNetworks
+       */
+      public static CreateServerOptions novaNetworks(Iterable<Network> networks) {
+         CreateServerOptions options = new CreateServerOptions();
+         return CreateServerOptions.class.cast(options.novaNetworks(networks));
       }
 
       /**

@@ -109,7 +109,13 @@ public class NovaComputeServiceAdapter implements
          options.securityGroupNames(templateOptions.getSecurityGroupNames().get());
       options.userData(templateOptions.getUserData());
       options.diskConfig(templateOptions.getDiskConfig());
-      options.networks(templateOptions.getNetworks());
+      options.configDrive(templateOptions.getConfigDrive());
+      if (templateOptions.getNovaNetworks() != null) {
+         options.novaNetworks(templateOptions.getNovaNetworks());
+      }
+      if (templateOptions.getNetworks() != null) {
+         options.networks(templateOptions.getNetworks());
+      }
 
       Optional<String> privateKey = Optional.absent();
       if (templateOptions.getKeyPairName() != null) {
