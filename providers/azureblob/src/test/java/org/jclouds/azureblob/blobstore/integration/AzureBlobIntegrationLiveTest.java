@@ -45,6 +45,9 @@ public class AzureBlobIntegrationLiveTest extends BaseBlobIntegrationTest {
 
    public AzureBlobIntegrationLiveTest() {
       provider = "azureblob";
+  //    identity = "bhash90";
+  //    credential = "Zjg+v3+ZjI1NHysMKyiR5vfYUglL2JXgHlm26Ymf+NhTcE2kz8T3KwVer+TYqDN1tM/ePzHoyrBZWyHH+nNnwg==";
+      
    }
    @Override
    public void testGetIfMatch() throws InterruptedException {

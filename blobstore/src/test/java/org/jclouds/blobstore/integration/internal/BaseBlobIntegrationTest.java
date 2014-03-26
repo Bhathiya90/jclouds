@@ -55,6 +55,7 @@ import org.jclouds.blobstore.domain.BlobMetadata;
 import org.jclouds.blobstore.domain.PageSet;
 import org.jclouds.blobstore.domain.StorageMetadata;
 import org.jclouds.blobstore.domain.StorageType;
+import org.jclouds.blobstore.functions.ObjectMD5;
 import org.jclouds.crypto.Crypto;
 import org.jclouds.encryption.internal.JCECrypto;
 import org.jclouds.http.BaseJettyTest;
@@ -77,6 +78,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.hash.HashCode;
+import com.google.common.hash.Hashing;
 import com.google.common.io.ByteSource;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
@@ -177,7 +179,7 @@ public class BaseBlobIntegrationTest extends BaseBlobStoreIntegrationTest {
       }
    }
 
-   @Test(groups = { "integration", "live" })
+   @Test(groups = {"integration", "live" })
    public void testFileGetParallel() throws Exception {
       final ByteSource supplier = createTestInput(32 * 1024);
       final String expectedContentDisposition = "attachment; filename=constit.txt";
@@ -258,6 +260,7 @@ public class BaseBlobIntegrationTest extends BaseBlobStoreIntegrationTest {
 
    }
 
+   
    @Test(groups = { "integration", "live" })
    public void testCreateBlobWithExpiry() throws InterruptedException {
       String container = getContainerName();
@@ -301,6 +304,79 @@ public class BaseBlobIntegrationTest extends BaseBlobStoreIntegrationTest {
       HashCode contentMD5 = md5().hashBytes(payload);
       putBlobWithMd5(payload, contentMD5);
    }
+   
+ /*********************************************************************/  
+   
+   @Test(groups = { "integration", "live" })
+	public void putBlobWithCorrectMD5() throws IOException, InterruptedException  {
+	   	
+	   	ByteSource payload = ByteSource.wrap("blob-content".getBytes(Charsets.UTF_8));	
+		HashCode contentMD5 = payload.hash(Hashing.md5());		
+		PutBlobWithMD5(payload, contentMD5);
+	}
+
+	@Test(groups = { "integration", "live" })
+	 public void putBlobWithIncorrectMD5() throws InterruptedException, IOException{
+
+		
+		ByteSource payload = ByteSource.wrap("blob-content".getBytes(Charsets.UTF_8));	
+		ByteSource payload_wrong = payload.slice(1, payload.size());
+		HashCode wrongContenetMD5 = payload_wrong.hash(Hashing.md5());
+		
+		try{
+			PutBlobWithMD5(payload, wrongContenetMD5);
+			//fail();
+
+		}catch(HttpResponseException hre){
+	         if (hre.getResponse().getStatusCode() != getIncorrectContentMD5StatusCode()) {
+	             throw hre;
+	         }
+		}
+		
+		
+	}
+	
+	@Test(groups = { "integration", "live" })
+	public void putBlobWithoutMD5() throws InterruptedException, IOException{
+		
+		ByteSource payload = ByteSource.wrap("blob-content".getBytes(Charsets.UTF_8));	
+		PutBlobWithoutMD5(payload, null);	
+	}
+   
+   private void PutBlobWithMD5(ByteSource payload, HashCode contentMD5) throws InterruptedException, IOException {
+	      String container = getContainerName();
+	      BlobStore blobStore = view.getBlobStore();
+	      try {
+	         String blobName = "putBlobWithMd5XX345";
+	         Blob blob = blobStore
+	            .blobBuilder(blobName)
+	            .payload(payload).contentLength(payload.size())	            
+	            .contentMD5(contentMD5.asBytes())
+	            .build();
+	         
+	         
+	          
+	         blobStore.putBlob(container, blob);
+	      } finally {
+	         returnContainer(container);
+	      }
+   }
+	
+   private void PutBlobWithoutMD5(ByteSource payload, HashCode contentMD5) throws InterruptedException, IOException {
+	      String container = getContainerName();
+	      BlobStore blobStore = view.getBlobStore();
+	      try {
+	         String blobName = "putBlobWithMd5-" + new Random().nextLong();
+	         Blob blob = blobStore
+	            .blobBuilder(blobName)
+	            .payload(payload).contentLength(payload.size()+1)
+	            .build();
+	         blobStore.putBlob(container, blob);
+	      } finally {
+	         returnContainer(container);
+	      }
+}
+   /*******************************************************************************************************************************/
 
    @Test(groups = { "integration", "live" })
    public void testPutIncorrectContentMD5() throws InterruptedException, IOException {
@@ -315,6 +391,8 @@ public class BaseBlobIntegrationTest extends BaseBlobStoreIntegrationTest {
          }
       }
    }
+   
+   
 
    @Test(groups = { "integration", "live" })
    public void testGetIfUnmodifiedSince() throws InterruptedException {
@@ -659,6 +737,21 @@ public class BaseBlobIntegrationTest extends BaseBlobStoreIntegrationTest {
    protected void checkMD5(BlobMetadata metadata) throws IOException {
       assertEquals(metadata.getContentMetadata().getContentMD5(), md5().hashString(TEST_STRING, UTF_8).asBytes());
    }
+   
+
+	 
+	@Test(groups = { "integration", "live" })
+	public void signedUrlPutWithCorrectMD5(){
+		
+	}
+	
+	@Test(groups = { "integration", "live" })
+	public void signedUrlPutWithIncorrectMD5(){
+		
+	}
+
+   
+   
 
    /** @return ByteSource containing a random length 0..length of random bytes. */
    @SuppressWarnings("unchecked")
@@ -668,4 +761,7 @@ public class BaseBlobIntegrationTest extends BaseBlobStoreIntegrationTest {
       random.nextBytes(buffer);
       return ByteSource.wrap(buffer);
    }
+
+   
+   
 }
