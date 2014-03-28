@@ -307,15 +307,15 @@ public class BaseBlobIntegrationTest extends BaseBlobStoreIntegrationTest {
    
  /*********************************************************************/  
    
-   @Test(groups = { "integration", "live" })
-	public void putBlobWithCorrectMD5() throws IOException, InterruptedException  {
+   @Test(groups = {"integration", "live" })
+  	public void putBlobWithCorrectMD5() throws IOException, InterruptedException  {
 	   	
 	   	ByteSource payload = ByteSource.wrap("blob-content".getBytes(Charsets.UTF_8));	
-		HashCode contentMD5 = payload.hash(Hashing.md5());		
+		HashCode contentMD5 = payload.hash(Hashing.md5());
 		PutBlobWithMD5(payload, contentMD5);
 	}
 
-	@Test(groups = { "integration", "live" })
+	@Test(groups = {"integration", "live" })
 	 public void putBlobWithIncorrectMD5() throws InterruptedException, IOException{
 
 		
@@ -336,7 +336,7 @@ public class BaseBlobIntegrationTest extends BaseBlobStoreIntegrationTest {
 		
 	}
 	
-	@Test(groups = { "integration", "live" })
+	@Test(groups = {"integration", "live" })
 	public void putBlobWithoutMD5() throws InterruptedException, IOException{
 		
 		ByteSource payload = ByteSource.wrap("blob-content".getBytes(Charsets.UTF_8));	
@@ -344,21 +344,23 @@ public class BaseBlobIntegrationTest extends BaseBlobStoreIntegrationTest {
 	}
    
    private void PutBlobWithMD5(ByteSource payload, HashCode contentMD5) throws InterruptedException, IOException {
-	      String container = getContainerName();
+	    //  String container = getContainerName();
 	      BlobStore blobStore = view.getBlobStore();
+	      String mContainer =getContainerName().toLowerCase();
 	      try {
-	         String blobName = "putBlobWithMd5XX345";
+	         String blobName = "putblobwithmd5";
 	         Blob blob = blobStore
 	            .blobBuilder(blobName)
-	            .payload(payload).contentLength(payload.size())	            
+	            .payload(payload)        
 	            .contentMD5(contentMD5.asBytes())
+	            .contentLength(payload.size())	    
 	            .build();
 	         
-	         
-	          
-	         blobStore.putBlob(container, blob);
+	      
+	        // blobStore.createContainerInLocation(null, mContainer); 
+	         blobStore.putBlob(mContainer, blob);
 	      } finally {
-	         returnContainer(container);
+	         returnContainer(mContainer);
 	      }
    }
 	
@@ -369,7 +371,7 @@ public class BaseBlobIntegrationTest extends BaseBlobStoreIntegrationTest {
 	         String blobName = "putBlobWithMd5-" + new Random().nextLong();
 	         Blob blob = blobStore
 	            .blobBuilder(blobName)
-	            .payload(payload).contentLength(payload.size()+1)
+	            .payload(payload).contentLength(payload.size())
 	            .build();
 	         blobStore.putBlob(container, blob);
 	      } finally {
@@ -378,7 +380,7 @@ public class BaseBlobIntegrationTest extends BaseBlobStoreIntegrationTest {
 }
    /*******************************************************************************************************************************/
 
-   @Test(groups = { "integration", "live" })
+   @Test(groups = {"integration", "live" })
    public void testPutIncorrectContentMD5() throws InterruptedException, IOException {
       byte[] payload = ByteStreams.toByteArray(createTestInput(1024));
       HashCode contentMD5 = md5().hashBytes(new byte[0]);
@@ -394,7 +396,7 @@ public class BaseBlobIntegrationTest extends BaseBlobStoreIntegrationTest {
    
    
 
-   @Test(groups = { "integration", "live" })
+   @Test(groups = {"integration", "live" })
    public void testGetIfUnmodifiedSince() throws InterruptedException {
       String container = getContainerName();
       try {
@@ -420,7 +422,7 @@ public class BaseBlobIntegrationTest extends BaseBlobStoreIntegrationTest {
       }
    }
 
-   @Test(groups = { "integration", "live" })
+   @Test(groups = {"integration", "live" })
    public void testGetIfMatch() throws InterruptedException {
       String container = getContainerName();
       try {
@@ -485,7 +487,7 @@ public class BaseBlobIntegrationTest extends BaseBlobStoreIntegrationTest {
       }
    }
 
-   @Test(groups = { "integration", "live" })
+   @Test(groups = {"integration", "live" })
    public void testGetTwoRanges() throws InterruptedException, IOException {
       String container = getContainerName();
       try {
@@ -507,7 +509,7 @@ public class BaseBlobIntegrationTest extends BaseBlobStoreIntegrationTest {
       return eTag;
    }
 
-   @Test(groups = { "integration", "live" })
+   @Test(groups = {"integration", "live" })
    public void deleteObjectNotFound() throws InterruptedException {
       String container = getContainerName();
       String name = "test";
@@ -518,7 +520,7 @@ public class BaseBlobIntegrationTest extends BaseBlobStoreIntegrationTest {
       }
    }
 
-   @Test(groups = { "integration", "live" })
+   @Test(groups = {"integration", "live" })
    public void blobNotFound() throws InterruptedException {
       String container = getContainerName();
       String name = "test";
@@ -539,7 +541,7 @@ public class BaseBlobIntegrationTest extends BaseBlobStoreIntegrationTest {
       }
    }
 
-   @Test(groups = { "integration", "live" }, dataProvider = "delete")
+   @Test(groups = {"integration", "live" }, dataProvider = "delete")
    public void deleteObject(String name) throws InterruptedException {
       String container = getContainerName();
       try {
